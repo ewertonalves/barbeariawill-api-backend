@@ -24,7 +24,8 @@ public class ConfirmarAgendamentoUseCase {
         if (confirmado) {
             agendamento.confirmar();
             repo.salvar(agendamento);
-            client.enviarTexto(telefone, "✔️ Agendamento confirmado com sucesso!");
+            client.enviarTexto(telefone, "✔️ Agendamento confirmado com sucesso!" +
+            "\nEndereço: Rua Barão do Rio da Prata n.°: 166 - Loja 07 - Vila Heliopolis");
         } else {
             repo.remover(agendamento.getId());
             client.enviarTexto(telefone, "❌ Agendamento cancelado. Caso queira, inicie novamente.");

@@ -17,13 +17,16 @@ public class EscolherHorarioUseCase {
     private final AppointmentInterfacePort repo;
     private final WhatsAppClientIntefacePort client;
     private final WorkScheduleUseCase workScheduleService;
+    private final ListTimeBlocksUseCase listTimeBlocksUseCase;
 
     public EscolherHorarioUseCase(AppointmentInterfacePort repo,
                                  WhatsAppClientIntefacePort client,
-                                 WorkScheduleUseCase workScheduleService) {
+                                 WorkScheduleUseCase workScheduleService,
+                                 ListTimeBlocksUseCase listTimeBlocksUseCase) {
         this.repo = repo;
         this.client = client;
         this.workScheduleService = workScheduleService;
+        this.listTimeBlocksUseCase = listTimeBlocksUseCase;
     }
 
     public void execute(String telefone, String hora) {
@@ -32,6 +35,18 @@ public class EscolherHorarioUseCase {
         
         LocalTime horaFormat = LocalTime.parse(hora, FORMATO_HORA);
         
+        // Verifica se o horário está bloqueado
+        var blocos = listTimeBlocksUseCase.execute();
+        boolean bloqueado = blocos.stream().anyMatch(block ->
+            block.date().equals(agendamento.getData()) &&
+            ( !horaFormat.isBefore(block.startTime()) && !horaFormat.isAfter(block.endTime()) )
+        );
+        if (bloqueado) {
+            client.enviarTexto(telefone, "Desculpe, este horário está indisponível. Por favor, escolha outro horário.");
+            client.enviarListaHorarios(telefone, agendamento.getData().format(FORMATO_DATA));
+            return;
+        }
+
         if (!workScheduleService.isDisponivelParaAgendamento(agendamento.getData(), horaFormat)) {
             client.enviarTexto(telefone, "Desculpe, este horário não está disponível. Por favor, escolha outro horário.");
             client.enviarListaHorarios(telefone, agendamento.getData().format(FORMATO_DATA));
